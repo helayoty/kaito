@@ -18,6 +18,7 @@ permissions:
 env:
   GO_VERSION: '1.20'
   IMAGE_NAME: 'workspace'
+  KAITO_MCR_REGISTRY: 'ghcr.io/helayoty/kaito'
 
 jobs:
   check-tag:
