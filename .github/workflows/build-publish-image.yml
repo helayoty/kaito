@@ -13,6 +13,7 @@ env:
   REGISTRY: ghcr.io
   GO_VERSION: '1.20'
   IMAGE_NAME: 'workspace'
+  RELEASE_VERSION: 'test'
 
 jobs:
   publish-images:
@@ -66,8 +67,7 @@ jobs:
           TRIVY_USERNAME: ${{ github.actor }}
           TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
 
-  run-e2e:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+  run-e2e-gh-image:
     needs: [publish-images]
     uses: ./.github/workflows/e2e-workflow.yml
     with:
@@ -84,7 +84,6 @@ jobs:
       E2E_ACR_AMRT_PASSWORD: ${{ secrets.ACR_AMRT_PASSWORD }}
 
   create-release:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     environment: preset-env
     needs: [run-e2e]

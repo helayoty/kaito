@@ -119,20 +119,20 @@ jobs:
       E2E_ACR_AMRT_USERNAME: ${{ secrets.ACR_AMRT_USERNAME }}
       E2E_ACR_AMRT_PASSWORD: ${{ secrets.ACR_AMRT_PASSWORD }}
 
-  publish-to-mcr:
-    runs-on: ubuntu-latest
-    environment: publish-mcr
-    needs: [run-e2e-mcr, check-tag]
-    steps:
-    - name: Authenticate to ACR
-      run: |
-        az login --identity
-        az acr login -n ${{ env.KAITO_MCR_REGISTRY }}
+  # publish-to-mcr:
+  #   runs-on: ubuntu-latest
+  #   environment: publish-mcr
+  #   needs: [run-e2e-mcr, check-tag]
+  #   steps:
+  #   - name: Authenticate to ACR
+  #     run: |
+  #       az login --identity
+  #       az acr login -n ${{ env.KAITO_MCR_REGISTRY }}
 
-    - name: 'Publish to ACR'
-      id: Publish
-      run: |
-        OUTPUT_TYPE=type=registry make docker-build-kaito
-      env:
-          VERSION: ${{ needs.check-tag.outputs.tag }}
-          REGISTRY: ${{ env.KAITO_MCR_REGISTRY }}/public/aks/kaito
+  #   - name: 'Publish to ACR'
+  #     id: Publish
+  #     run: |
+  #       OUTPUT_TYPE=type=registry make docker-build-kaito
+  #     env:
+  #         VERSION: ${{ needs.check-tag.outputs.tag }}
+  #         REGISTRY: ${{ env.KAITO_MCR_REGISTRY }}/public/aks/kaito

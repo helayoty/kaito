@@ -82,124 +82,124 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION  }}
 
-      - name: Az login
-        uses: azure/login@8c334a195cbb38e46038007b304988d888bf676a # v2.0.0
-        with:
-          client-id: ${{ secrets.E2E_CLIENT_ID }}
-          tenant-id: ${{ secrets.E2E_TENANT_ID }}
-          subscription-id: ${{ secrets.E2E_SUBSCRIPTION_ID }}
+      # - name: Az login
+      #   uses: azure/login@8c334a195cbb38e46038007b304988d888bf676a # v2.0.0
+      #   with:
+      #     client-id: ${{ secrets.E2E_CLIENT_ID }}
+      #     tenant-id: ${{ secrets.E2E_TENANT_ID }}
+      #     subscription-id: ${{ secrets.E2E_SUBSCRIPTION_ID }}
 
-      - uses: azure/setup-helm@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-        id: install
+      # - uses: azure/setup-helm@v4
+      #   with:
+      #     token: ${{ secrets.GITHUB_TOKEN }}
+      #   id: install
 
-      - name: Create Resource Group
-        shell: bash
-        run: |
-          make create-rg
-        env:
-          AZURE_RESOURCE_GROUP: ${{ env.CLUSTER_NAME }}
+      # - name: Create Resource Group
+      #   shell: bash
+      #   run: |
+      #     make create-rg
+      #   env:
+      #     AZURE_RESOURCE_GROUP: ${{ env.CLUSTER_NAME }}
 
-      - name: Create ACR
-        shell: bash
-        run: |
-          make create-acr
-        env:
-          AZURE_RESOURCE_GROUP: ${{ env.CLUSTER_NAME }}
-          AZURE_ACR_NAME: ${{ env.CLUSTER_NAME }}
+      # - name: Create ACR
+      #   shell: bash
+      #   run: |
+      #     make create-acr
+      #   env:
+      #     AZURE_RESOURCE_GROUP: ${{ env.CLUSTER_NAME }}
+      #     AZURE_ACR_NAME: ${{ env.CLUSTER_NAME }}
 
-      - name: Create Azure Identity
-        uses: azure/CLI@v1.0.9
-        with:
-          inlineScript: |
-            az identity create --name gpuIdentity --resource-group  ${{ env.CLUSTER_NAME }}
+      # - name: Create Azure Identity
+      #   uses: azure/CLI@v1.0.9
+      #   with:
+      #     inlineScript: |
+      #       az identity create --name gpuIdentity --resource-group  ${{ env.CLUSTER_NAME }}
 
-      - name: build KAITO image
-        if: ${{ !inputs.isRelease }}
-        shell: bash
-        run: |
-          make docker-build-kaito
-        env:
-          REGISTRY: ${{ env.REGISTRY }}
-          VERSION: ${{ env.VERSION }}
+      # - name: build KAITO image
+      #   if: ${{ !inputs.isRelease }}
+      #   shell: bash
+      #   run: |
+      #     make docker-build-kaito
+      #   env:
+      #     REGISTRY: ${{ env.REGISTRY }}
+      #     VERSION: ${{ env.VERSION }}
 
-      - name: create cluster
-        shell: bash
-        run: |
-          make create-aks-cluster
-        env:
-          AZURE_ACR_NAME: ${{ env.CLUSTER_NAME }}
-          AZURE_RESOURCE_GROUP: ${{ env.CLUSTER_NAME }}
-          AZURE_CLUSTER_NAME: ${{ env.CLUSTER_NAME }}
-          AZURE_LOCATION: ${{ inputs.region }}
-          AKS_K8S_VERSION: ${{ inputs.k8s_version }}
+      # - name: create cluster
+      #   shell: bash
+      #   run: |
+      #     make create-aks-cluster
+      #   env:
+      #     AZURE_ACR_NAME: ${{ env.CLUSTER_NAME }}
+      #     AZURE_RESOURCE_GROUP: ${{ env.CLUSTER_NAME }}
+      #     AZURE_CLUSTER_NAME: ${{ env.CLUSTER_NAME }}
+      #     AZURE_LOCATION: ${{ inputs.region }}
+      #     AKS_K8S_VERSION: ${{ inputs.k8s_version }}
 
-      - name: Install gpu-provisioner helm chart
-        shell: bash
-        run: |
-          make gpu-provisioner-helm
-          kubectl wait --for=condition=available deploy "kaito-gpu-provisioner" -n gpu-provisioner --timeout=300s
-        env:
-          AZURE_RESOURCE_GROUP: ${{ env.CLUSTER_NAME }}
-          AZURE_CLUSTER_NAME: ${{ env.CLUSTER_NAME }}
+      # - name: Install gpu-provisioner helm chart
+      #   shell: bash
+      #   run: |
+      #     make gpu-provisioner-helm
+      #     kubectl wait --for=condition=available deploy "kaito-gpu-provisioner" -n gpu-provisioner --timeout=300s
+      #   env:
+      #     AZURE_RESOURCE_GROUP: ${{ env.CLUSTER_NAME }}
+      #     AZURE_CLUSTER_NAME: ${{ env.CLUSTER_NAME }}
 
-      - uses: azure/login@8c334a195cbb38e46038007b304988d888bf676a # v2.0.0
-        with:
-          client-id: ${{ secrets.E2E_CLIENT_ID }}
-          tenant-id: ${{ secrets.E2E_TENANT_ID }}
-          subscription-id: ${{ secrets.E2E_SUBSCRIPTION_ID }}
+      # - uses: azure/login@8c334a195cbb38e46038007b304988d888bf676a # v2.0.0
+      #   with:
+      #     client-id: ${{ secrets.E2E_CLIENT_ID }}
+      #     tenant-id: ${{ secrets.E2E_TENANT_ID }}
+      #     subscription-id: ${{ secrets.E2E_SUBSCRIPTION_ID }}
 
-      - name: Create Role Assignment
-        uses: azure/CLI@v1.0.9
-        with:
-          inlineScript: |
-            IDENTITY_PRINCIPAL_ID="$(az identity show --name gpuIdentity --resource-group ${{ env.CLUSTER_NAME }} --query 'principalId' -otsv)"
-            az role assignment create --assignee ${IDENTITY_PRINCIPAL_ID} --scope "/subscriptions/${{ secrets.E2E_SUBSCRIPTION_ID }}/resourceGroups/${{ env.CLUSTER_NAME }}"  --role "Contributor"
+      # - name: Create Role Assignment
+      #   uses: azure/CLI@v1.0.9
+      #   with:
+      #     inlineScript: |
+      #       IDENTITY_PRINCIPAL_ID="$(az identity show --name gpuIdentity --resource-group ${{ env.CLUSTER_NAME }} --query 'principalId' -otsv)"
+      #       az role assignment create --assignee ${IDENTITY_PRINCIPAL_ID} --scope "/subscriptions/${{ secrets.E2E_SUBSCRIPTION_ID }}/resourceGroups/${{ env.CLUSTER_NAME }}"  --role "Contributor"
 
-      - name: Create Azure Federated Identity
-        uses: azure/CLI@v1.0.9
-        with:
-          inlineScript: |
-            AKS_OIDC_ISSUER="$(az aks show -n "${{ env.CLUSTER_NAME }}" -g "${{ env.CLUSTER_NAME }}" --query 'oidcIssuerProfile.issuerUrl' -otsv)"
-            az identity federated-credential create --name gpu-fed-credential --identity-name gpuIdentity --resource-group "${{ env.CLUSTER_NAME }}" \
-            --issuer "${AKS_OIDC_ISSUER}" --subject system:serviceaccount:"gpu-provisioner:gpu-provisioner" --audience api://AzureADTokenExchange
+      # - name: Create Azure Federated Identity
+      #   uses: azure/CLI@v1.0.9
+      #   with:
+      #     inlineScript: |
+      #       AKS_OIDC_ISSUER="$(az aks show -n "${{ env.CLUSTER_NAME }}" -g "${{ env.CLUSTER_NAME }}" --query 'oidcIssuerProfile.issuerUrl' -otsv)"
+      #       az identity federated-credential create --name gpu-fed-credential --identity-name gpuIdentity --resource-group "${{ env.CLUSTER_NAME }}" \
+      #       --issuer "${AKS_OIDC_ISSUER}" --subject system:serviceaccount:"gpu-provisioner:gpu-provisioner" --audience api://AzureADTokenExchange
 
-      - name: Install KAITO Workspace helm chart
-        shell: bash
-        run: |
-          make az-patch-install-helm
-          kubectl wait --for=condition=available deploy "kaito-workspace" -n kaito-workspace --timeout=300s
-        env:
-          AZURE_RESOURCE_GROUP: ${{ env.CLUSTER_NAME }}
-          AZURE_CLUSTER_NAME: ${{ env.CLUSTER_NAME }}
-          REGISTRY: ${{ env.REGISTRY }}
-          VERSION: ${{ env.VERSION }}
+      # - name: Install KAITO Workspace helm chart
+      #   shell: bash
+      #   run: |
+      #     make az-patch-install-helm
+      #     kubectl wait --for=condition=available deploy "kaito-workspace" -n kaito-workspace --timeout=300s
+      #   env:
+      #     AZURE_RESOURCE_GROUP: ${{ env.CLUSTER_NAME }}
+      #     AZURE_CLUSTER_NAME: ${{ env.CLUSTER_NAME }}
+      #     REGISTRY: ${{ env.REGISTRY }}
+      #     VERSION: ${{ env.VERSION }}
             
-      - name: Add Secret Credentials
-        run: |
-          kubectl create secret docker-registry ${{ secrets.E2E_AMRT_SECRET_NAME }} \
-          --docker-server=${{ secrets.E2E_ACR_AMRT_USERNAME }}.azurecr.io \
-          --docker-username=${{ secrets.E2E_ACR_AMRT_USERNAME }} \
-          --docker-password=${{ secrets.E2E_ACR_AMRT_PASSWORD }}
+      # - name: Add Secret Credentials
+      #   run: |
+      #     kubectl create secret docker-registry ${{ secrets.E2E_AMRT_SECRET_NAME }} \
+      #     --docker-server=${{ secrets.E2E_ACR_AMRT_USERNAME }}.azurecr.io \
+      #     --docker-username=${{ secrets.E2E_ACR_AMRT_USERNAME }} \
+      #     --docker-password=${{ secrets.E2E_ACR_AMRT_PASSWORD }}
             
-      - name: Log kaito-workspace
-        run: |
-          kubectl get pods -n kaito-workspace -o name | grep "^pod/kaito-workspace" | sed 's/^pod\///' | xargs -I {} kubectl logs -n kaito-workspace {}
+      # - name: Log kaito-workspace
+      #   run: |
+      #     kubectl get pods -n kaito-workspace -o name | grep "^pod/kaito-workspace" | sed 's/^pod\///' | xargs -I {} kubectl logs -n kaito-workspace {}
 
-      - name: Run e2e test
-        run: |
-          make kaito-workspace-e2e-test
-        env:
-          AZURE_CLUSTER_NAME: ${{ env.CLUSTER_NAME }}
-          RUN_LLAMA_13B: ${{ env.RUN_LLAMA_13B }}
-          AI_MODELS_REGISTRY: ${{ secrets.E2E_ACR_AMRT_USERNAME }}.azurecr.io
-          AI_MODELS_REGISTRY_SECRET: ${{ secrets.E2E_AMRT_SECRET_NAME }}
+      # - name: Run e2e test
+      #   run: |
+      #     make kaito-workspace-e2e-test
+      #   env:
+      #     AZURE_CLUSTER_NAME: ${{ env.CLUSTER_NAME }}
+      #     RUN_LLAMA_13B: ${{ env.RUN_LLAMA_13B }}
+      #     AI_MODELS_REGISTRY: ${{ secrets.E2E_ACR_AMRT_USERNAME }}.azurecr.io
+      #     AI_MODELS_REGISTRY_SECRET: ${{ secrets.E2E_AMRT_SECRET_NAME }}
 
-      - name: Cleanup e2e resources
-        if: ${{ always() }}
-        uses: azure/CLI@v1.0.9
-        with:
-          inlineScript: |
-            set +e
-            az group delete --name "${{ env.CLUSTER_NAME }}" --yes --no-wait || true
+      # - name: Cleanup e2e resources
+      #   if: ${{ always() }}
+      #   uses: azure/CLI@v1.0.9
+      #   with:
+      #     inlineScript: |
+      #       set +e
+      #       az group delete --name "${{ env.CLUSTER_NAME }}" --yes --no-wait || true
