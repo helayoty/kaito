@@ -126,7 +126,7 @@ jobs:
     runs-on:
       labels: [ "self-hosted", "1ES.Pool=1es-aks-kaito-agent-pool-ubuntu" ]
     environment: publish-mcr
-    needs: [run-e2e, check-tag]
+    needs: [run-e2e-mcr, check-tag]
     steps:
     - name: Authenticate to ACR
       run: |
