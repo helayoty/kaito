@@ -1,10 +1,14 @@
 name: Push image to ACR
 on:
- workflow_dispatch:
+  workflow_dispatch:
    inputs:
      release_version:
        description: 'tag to be created for this image (i.e. vxx.xx.xx)'
        required: true
+  pull_request:
+    branches: [ main, release-** ]
+    types: [ completed ]
+
 
 permissions:
   id-token: write
@@ -14,9 +18,11 @@ permissions:
 env:
   GO_VERSION: '1.20'
   IMAGE_NAME: 'workspace'
+  MCR_REGISTRY: "mcr.microsoft.com/aks/kaito"
 
 jobs:
   check-tag:
+    if: github.event_name != 'pull_request' || ( github.event.pull_request.merged == true && contains(github.event.pull_request.title, 'update manifest and helm charts') )
     runs-on:
       labels: [ "self-hosted", "1ES.Pool=1es-aks-kaito-agent-pool-ubuntu" ]
     environment: publish-mcr
@@ -55,12 +61,12 @@ jobs:
              sha: context.sha
            })
 
-  publish:
+  build-scan-image:
+    if: github.event_name != 'pull_request' || ( github.event.pull_request.merged == true && contains(github.event.pull_request.title, 'update manifest and helm charts') )
     runs-on:
       labels: [ "self-hosted", "1ES.Pool=1es-aks-kaito-agent-pool-ubuntu" ]
     environment: publish-mcr
-    needs:
-      - check-tag
+    needs: [check-tag]
     steps:
       - id: get-tag
         name: Get tag
@@ -98,13 +104,30 @@ jobs:
           TRIVY_USERNAME: ${{ github.actor }}
           TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 'Dispatch tag to e2e test'
-        uses: peter-evans/repository-dispatch@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          event-type: release-tag
-          client-payload: '{"isRelease": true,"registry": "mcr.microsoft.com/aks/kaito","tag": "${{ needs.check-tag.outputs.tag }}"}'
+    run-e2e:
+      if: github.event_name != 'pull_request' || ( github.event.pull_request.merged == true && contains(github.event.pull_request.title, 'update manifest and helm charts') )
+      needs: [build-scan-image]
+      uses: ./.github/workflows/e2e-workflow.yml
+      with:
+        git_sha: ${{ github.event.pull_request.head.sha }}
+        isRelease: true
+        registry: ${{ env.MCR_REGISTRY }}
+        tag: ${{ env.IMG_TAG }}
+      secrets:
+        E2E_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+        E2E_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+        E2E_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        E2E_AMRT_SECRET_NAME: ${{ secrets.AMRT_SECRET_NAME }}
+        E2E_ACR_AMRT_USERNAME: ${{ secrets.ACR_AMRT_USERNAME }}
+        E2E_ACR_AMRT_PASSWORD: ${{ secrets.ACR_AMRT_PASSWORD }}
 
+    publish-to-mcr:
+      if: github.event_name != 'pull_request' || ( github.event.pull_request.merged == true && contains(github.event.pull_request.title, 'update manifest and helm charts') )
+      runs-on:
+        labels: [ "self-hosted", "1ES.Pool=1es-aks-kaito-agent-pool-ubuntu" ]
+      environment: publish-mcr
+      needs: [run-e2e]
+      steps:
       - name: Authenticate to ACR
         run: |
           az login --identity
