@@ -102,19 +102,17 @@ jobs:
           TRIVY_USERNAME: ${{ github.actor }}
           TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
 
-  run-e2e:
+  run-e2e-mcr:
     permissions:
       contents: read
       id-token: write
       statuses: write
     needs: [build-scan-image, check-tag]
-    env:
-      MCR_REGISTRY: "mcr.microsoft.com/aks/kaito"
     uses: ./.github/workflows/e2e-workflow.yml
     with:
       git_sha: ${{ github.event.pull_request.head.sha }}
       isRelease: true
-      registry: ${{ env.MCR_REGISTRY }}
+      registry: "mcr.microsoft.com/aks/kaito"
       tag: ${{ needs.check-tag.outputs.tag }}
     secrets:
       E2E_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
