@@ -1,10 +1,9 @@
 name: Create, Scan and Publish KAITO image
 on:
-  pull_request:
-    branches:
-      - main
-      - release-**
-    types: [ closed ]
+  workflow_run:
+    workflows: [ "Push image to ACR" ]
+    types: [ completed ]
+    branches: [ release-** ]
 
 permissions:
   contents: write
@@ -16,35 +15,24 @@ env:
   IMAGE_NAME: 'workspace'
 
 jobs:
-  export-registry:
-    if: github.event.pull_request.merged == true && contains(github.event.pull_request.title, 'update manifest and helm charts')
-    runs-on: ubuntu-20.04
+  publish-images:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
     environment: preset-env
-    outputs:
-      registry: ${{ steps.export.outputs.registry }}
     steps:
-      - id: export
+      - id: get-registry
         run: |
           # registry must be in lowercase
-          echo "registry=$(echo "${{ env.REGISTRY }}/${{ github.repository }}" | tr [:upper:] [:lower:])" >> $GITHUB_OUTPUT
-
-  publish-images:
-    if: github.event.pull_request.merged == true && contains(github.event.pull_request.title, 'update manifest and helm charts')
-    needs:
-      - export-registry
-    env:
-      REGISTRY: ${{ needs.export-registry.outputs.registry }}
-    runs-on: ubuntu-20.04
-    environment: preset-env
-    steps:
+          echo " b=$(echo "${{ env.REGISTRY }}/${{ github.repository }}" | tr [:upper:] [:lower:])" >> $GITHUB_ENV
       - id: get-tag
         name: Get tag
-        run: echo "IMG_TAG=$(echo ${{ github.event.pull_request.head.ref }} | tr -d release-)" >> $GITHUB_ENV
-      - uses: actions/checkout@v4
+        run: echo "RELEASE_VERSION=$(echo ${{ github.event.pull_request.head.ref }} | tr -d release-)" >> $GITHUB_ENV
+
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           submodules: true
           fetch-depth: 0
-          ref: ${{ env.IMG_TAG }}
+          ref: ${{ env.RELEASE_VERSION }}
 
       - name: Login to ${{ env.REGISTRY }}
         uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d
@@ -52,15 +40,17 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Set Image tag
         run: |
-          ver=${{ env.IMG_TAG }}
+          ver=${{ env.RELEASE_VERSION }}
           echo "IMG_TAG=${ver#"v"}" >> $GITHUB_ENV
+
       - name: Build image
         run: |
           OUTPUT_TYPE=type=registry make docker-build-kaito
         env:
-          VERSION: ${{ env.IMG_TAG }}
+          VERSION: ${{ env.RELEASE_VERSION }}
 
       - name: Scan ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMG_TAG }}
         uses: aquasecurity/trivy-action@master
@@ -76,9 +66,32 @@ jobs:
           TRIVY_USERNAME: ${{ github.actor }}
           TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 'Dispatch release tag'
-        uses: peter-evans/repository-dispatch@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          event-type: release-tag
-          client-payload: '{"isRelease": true,"registry": "$${{ env.REGISTRY }}","tag": "v${{ env.IMG_TAG }}"}'
+    run-e2e:
+      if: ${{ github.event.workflow_run.conclusion == 'success' }}
+      needs: [publish-images]
+      uses: ./.github/workflows/e2e-workflow.yml
+      with:
+        git_sha: {{ github.event.pull_request.head.ref }}
+        isRelease: true
+        registry: ${{ env.REGISTRY }}
+        tag: ${{ env.RELEASE_VERSION }}
+      secrets:
+        E2E_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+        E2E_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+        E2E_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        E2E_AMRT_SECRET_NAME: ${{ secrets.AMRT_SECRET_NAME }}
+        E2E_ACR_AMRT_USERNAME: ${{ secrets.ACR_AMRT_USERNAME }}
+        E2E_ACR_AMRT_PASSWORD: ${{ secrets.ACR_AMRT_PASSWORD }}
+
+    create-release:
+      if: ${{ github.event.workflow_run.conclusion == 'success' }}
+      runs-on: ubuntu-latest
+      environment: preset-env
+      needs: [run-e2e]
+      steps:
+        - name: 'Dispatch release tag'
+          uses: peter-evans/repository-dispatch@v3
+          with:
+            token: ${{ secrets.GITHUB_TOKEN }}
+            event-type: create-release
+            client-payload: '{"tag": "v${{ env.IMG_TAG }}"}'
