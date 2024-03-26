@@ -18,7 +18,6 @@ permissions:
 env:
   GO_VERSION: '1.20'
   IMAGE_NAME: 'workspace'
-  MCR_REGISTRY: "mcr.microsoft.com/aks/kaito"
 
 jobs:
   check-tag:
@@ -62,7 +61,6 @@ jobs:
            })
 
   build-scan-image:
-    if: github.event_name != 'pull_request' || ( github.event.pull_request.merged == true && contains(github.event.pull_request.title, 'update manifest and helm charts') )
     runs-on:
       labels: [ "self-hosted", "1ES.Pool=1es-aks-kaito-agent-pool-ubuntu" ]
     environment: publish-mcr
@@ -105,7 +103,10 @@ jobs:
           TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
 
   run-e2e:
-    if: github.event_name != 'pull_request' || ( github.event.pull_request.merged == true && contains(github.event.pull_request.title, 'update manifest and helm charts') )
+    permissions:
+      contents: read
+      id-token: write
+      statuses: write
     needs: [build-scan-image, check-tag]
     env:
       MCR_REGISTRY: "mcr.microsoft.com/aks/kaito"
@@ -124,7 +125,6 @@ jobs:
       E2E_ACR_AMRT_PASSWORD: ${{ secrets.ACR_AMRT_PASSWORD }}
 
   publish-to-mcr:
-    if: github.event_name != 'pull_request' || ( github.event.pull_request.merged == true && contains(github.event.pull_request.title, 'update manifest and helm charts') )
     runs-on:
       labels: [ "self-hosted", "1ES.Pool=1es-aks-kaito-agent-pool-ubuntu" ]
     environment: publish-mcr
