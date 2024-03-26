@@ -22,9 +22,7 @@ env:
 jobs:
   check-tag:
     if: github.event_name != 'pull_request' || ( github.event.pull_request.merged == true && contains(github.event.pull_request.title, 'update manifest and helm charts') )
-    runs-on:
-      labels: [ "self-hosted", "1ES.Pool=1es-aks-kaito-agent-pool-ubuntu" ]
-    environment: publish-mcr
+    runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.get-tag.outputs.tag }}
     steps:
@@ -61,8 +59,7 @@ jobs:
            })
 
   build-scan-image:
-    runs-on:
-      labels: [ "self-hosted", "1ES.Pool=1es-aks-kaito-agent-pool-ubuntu" ]
+    runs-on: ubuntu-latest
     environment: publish-mcr
     needs: [check-tag]
     steps:
@@ -123,8 +120,7 @@ jobs:
       E2E_ACR_AMRT_PASSWORD: ${{ secrets.ACR_AMRT_PASSWORD }}
 
   publish-to-mcr:
-    runs-on:
-      labels: [ "self-hosted", "1ES.Pool=1es-aks-kaito-agent-pool-ubuntu" ]
+    runs-on: ubuntu-latest
     environment: publish-mcr
     needs: [run-e2e-mcr, check-tag]
     steps:
