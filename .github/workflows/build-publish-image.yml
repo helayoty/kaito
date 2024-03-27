@@ -2,8 +2,7 @@ name: Create, Scan and Publish KAITO image
 on:
   workflow_run:
     workflows: [ "Push image to ACR" ]
-    types: [ closed ]
-    branches: [ release-** ]
+    types: [ completed ]
 
 permissions:
   contents: write
