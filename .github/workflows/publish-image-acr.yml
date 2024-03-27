@@ -6,7 +6,7 @@ on:
        description: 'tag to be created for this image (i.e. vxx.xx.xx)'
        required: true
   pull_request:
-    branches: [ main, release-** ]
+    branches: [ release-** ]
     types: [ completed ]
 
 
