@@ -71,7 +71,7 @@ jobs:
     needs: [publish-images]
     uses: ./.github/workflows/e2e-workflow.yml
     with:
-      git_sha: {{ github.event.pull_request.head.ref }}
+      git_sha: ${{ github.sha }}
       isRelease: true
       registry: ${{ env.REGISTRY }}
       tag: ${{ env.RELEASE_VERSION }}

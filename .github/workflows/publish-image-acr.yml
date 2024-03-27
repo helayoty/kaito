@@ -22,7 +22,7 @@ env:
 
 jobs:
   check-tag:
-    if: github.event_name != 'pull_request' || ( github.event.pull_request.merged == true && contains(github.event.pull_request.title, 'update manifest and helm charts') )
+    if: github.event_name != 'pull_request' || (github.event.pull_request.merged == true && contains(github.event.pull_request.title, 'update manifest and helm charts'))
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.get-tag.outputs.tag }}
@@ -107,7 +107,7 @@ jobs:
     needs: [build-scan-image, check-tag]
     uses: ./.github/workflows/e2e-workflow.yml
     with:
-      git_sha: ${{ github.event.pull_request.head.sha }}
+      git_sha: ${{ github.sha }}
       isRelease: true
       registry: "mcr.microsoft.com/aks/kaito"
       tag: ${{ needs.check-tag.outputs.tag }}
