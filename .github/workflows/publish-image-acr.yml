@@ -24,7 +24,8 @@ jobs:
   check-tag:
     if: |
       github.event_name != 'pull_request' ||
-      (github.event.pull_request.merged == true && contains(github.event.pull_request.title, 'update manifest and helm charts'))
+      (github.event.pull_request.merged == true && 
+      contains(github.event.pull_request.title, 'update manifest and helm charts'))
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.get-tag.outputs.tag }}
