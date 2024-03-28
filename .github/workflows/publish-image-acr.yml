@@ -129,6 +129,8 @@ jobs:
       id-token: write
       statuses: write
     needs: [ check-tag ]
+    env:
+      KAITO_MCR_REGISTRY: 'ghcr.io/helayoty/kaito'
     uses: ./.github/workflows/e2e-workflow.yml
     with:
       git_sha: ${{ github.sha }}
