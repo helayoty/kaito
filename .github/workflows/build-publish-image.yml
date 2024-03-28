@@ -16,7 +16,6 @@ permissions:
   packages: write
 
 env:
-  REGISTRY: ghcr.io
   GO_VERSION: '1.20'
   IMAGE_NAME: 'workspace'
 
@@ -26,7 +25,7 @@ jobs:
       github.event_name == 'workflow_dispatch' || 
       (github.event.pull_request.merged == true && contains(github.event.pull_request.title, 'update manifest and helm charts'))
     runs-on: ubuntu-latest
-    environment: publish-mcr
+    environment: preset-env
     outputs:
       tag: ${{ steps.get-tag.outputs.tag }}
     steps:
@@ -80,7 +79,7 @@ jobs:
       - id: get-registry
         run: |
           # registry must be in lowercase
-          echo " registry_repository=$(echo "${{ env.REGISTRY }}/${{ github.repository }}" | tr [:upper:] [:lower:])" >> $GITHUB_OUTPUT
+          echo "registry_repository=$(echo "ghcr.io/${{ github.repository }}" | tr [:upper:] [:lower:])" >> $GITHUB_OUTPUT
 
       - id: get-tag
         name: Get tag
