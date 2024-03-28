@@ -148,4 +148,4 @@ jobs:
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         event-type: publish-mcr-image
-        client-payload: '{"tag": "v${{ env.IMG_TAG }}"}'
+        client-payload: '{"tag": "v${{ needs.check-tag.outputs.tag }}"}'
