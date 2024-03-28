@@ -128,7 +128,7 @@ jobs:
       contents: read
       id-token: write
       statuses: write
-    needs: [ check-tag ]
+    needs: [ check-tag, build-scan-publish-image ]
     env:
       KAITO_MCR_REGISTRY: 'ghcr.io/helayoty/kaito'
     uses: ./.github/workflows/e2e-workflow.yml
