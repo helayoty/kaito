@@ -54,9 +54,9 @@ jobs:
       run: |
         TAG="${{ steps.get-tag.outputs.tag }}"
         if git show-ref --tags --verify --quiet "refs/tags/${TAG}"; then
-          echo "create_tag=$(echo 'false' )" >> $GITHUB_ENV
+          echo "create_tag=$(echo 'false' )" >> $GITHUB_OUTPUT
         else
-          echo "create_tag=$(echo 'true' )" >> $GITHUB_ENV
+          echo "create_tag=$(echo 'true' )" >> $GITHUB_OUTPUT
         fi
     - name: 'Create tag'
       if:  ${{ steps.check-tag.outputs.create_tag }} == 'true'
