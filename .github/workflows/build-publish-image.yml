@@ -47,9 +47,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
       with:
-         fetch-depth: 0
-         submodules: true
-         ref: ${{ steps.get-tag.outputs.tag }}
+        fetch-depth: 0
 
     - id: check-tag
       name: Check for Tag
@@ -131,7 +129,6 @@ jobs:
       isRelease: true
       registry: ${{ needs.get-registry.outputs.registry_repository }}
       tag:  ${{ needs.check-tag.outputs.tag }}
-      
     secrets:
       E2E_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       E2E_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
