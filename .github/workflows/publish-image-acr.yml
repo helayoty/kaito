@@ -25,21 +25,16 @@ jobs:
       with:
         go-version: ${{ env.GO_VERSION  }}
 
-    - id: get-tag
-      name: Get tag
-      run: |
-        echo "release-tag=$(echo ${{ github.event.pull_request.head.ref }} | tr -d release-)" >> $GITHUB_OUTPUT
-
     - name: Set Image tag
       run: |
-        ver=${{ steps.get-tag.outputs.release-tag }}
+        ver=${{ github.event.client_payload.tag }}
         echo "IMG_TAG=${ver#"v"}" >> $GITHUB_ENV
 
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
         submodules: true
-        ref: ${{ steps.get-tag.outputs.release-tag }}
+        ref: ${{ github.event.client_payload.tag }}
         
     - name: Login to ${{ env.REGISTRY }}
       uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d
@@ -79,7 +74,7 @@ jobs:
       git_sha: ${{ github.sha }}
       isRelease: true
       registry:  ghcr.io/helayoty/kaito/public/aks/kaito
-      tag: ${{ needs.get-tag.outputs.release-tag }}
+      tag: ${{ github.event.client_payload.tag }}
     secrets:
       E2E_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       E2E_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
@@ -98,4 +93,4 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           event-type: create-release
-          client-payload: '{"tag": "v${{ env.IMG_TAG }}"}'
+          client-payload: '{"tag": "${{ github.event.client_payload.tag }}"}'
