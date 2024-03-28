@@ -105,6 +105,7 @@ jobs:
           OUTPUT_TYPE=type=registry make docker-build-kaito
         env:
           VERSION: ${{ needs.check-tag.outputs.tag }}
+          REGISTRY: ${{ needs.get-registry.outputs.registry_repository }}
 
       - name: Scan ${{ steps.get-registry.outputs.registry_repository }}/${{ env.IMAGE_NAME }}:${{ env.IMG_TAG }}
         uses: aquasecurity/trivy-action@master
