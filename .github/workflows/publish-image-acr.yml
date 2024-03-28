@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: publish-mcr
     outputs:
-      tag: ${{ steps.get-tag.outputs.release-tag }}
+      release-tag: ${{ steps.get-tag.outputs.release-tag }}
     steps:
     - name: Set up Go ${{ env.GO_VERSION }}
       uses: actions/setup-go@v5
@@ -67,7 +67,7 @@ jobs:
     #   run: |
     #     OUTPUT_TYPE=type=registry make docker-build-kaito
     #   env:
-    #     VERSION: ${{ steps.get-tag.outputs.release-tag }}
+    #     VERSION: ${{ needs.get-tag.outputs.release-tag }}
     #     REGISTRY: ${{ secrets.KAITO_MCR_REGISTRY }}/public/aks/kaito
 
   run-e2e-mcr:
@@ -81,7 +81,7 @@ jobs:
       git_sha: ${{ github.sha }}
       isRelease: true
       registry:  ghcr.io/helayoty/kaito/public/aks/kaito
-      tag: ${{ steps.get-tag.outputs.release-tag }}
+      tag: ${{ needs.get-tag.outputs.release-tag }}
     secrets:
       E2E_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       E2E_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
