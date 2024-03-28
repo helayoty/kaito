@@ -1,8 +1,7 @@
 name: Push image to ACR
 on:
-  workflow_run:
-    workflows: [ "Create, Scan and Publish KAITO image" ]
-    types: [ completed ]
+  repository_dispatch:
+    types: [ publish-mcr-image ]
 
 permissions:
   contents: write
@@ -16,7 +15,6 @@ env:
 
 jobs:
   build-publish-mcr-image:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     environment: publish-mcr
     outputs:
