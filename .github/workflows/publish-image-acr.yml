@@ -91,7 +91,7 @@ jobs:
 
     - name: 'Build Image'
       run: |
-        OUTPUT_TYPE=type=docker ARCH=arm64 make docker-build-kaito
+        OUTPUT_TYPE=type=registry ARCH=arm64 make docker-build-kaito
       env:
         VERSION: ${{ env.IMG_TAG }}
         REGISTRY: ${{ env.KAITO_MCR_REGISTRY }}/public/aks/kaito
