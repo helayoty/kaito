@@ -26,13 +26,13 @@ jobs:
           echo " b=$(echo "${{ env.REGISTRY }}/${{ github.repository }}" | tr [:upper:] [:lower:])" >> $GITHUB_ENV
       - id: get-tag
         name: Get tag
-        run: echo "RELEASE_VERSION=$(echo ${{ github.event.pull_request.head.ref }} | tr -d release-)" >> $GITHUB_ENV
+        run: echo "RELEASE_VERSION=$(echo ${{ github.event.pull_request.head.ref }} | tr -d release-)" >> $GITHUB_OUTPUT
 
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           submodules: true
           fetch-depth: 0
-          ref: ${{ env.RELEASE_VERSION }}
+          ref: ${{ steps.get-tag.outputs.RELEASE_VERSION }}
 
       - name: Login to ${{ env.REGISTRY }}
         uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d
@@ -43,14 +43,14 @@ jobs:
 
       - name: Set Image tag
         run: |
-          ver=${{ env.RELEASE_VERSION }}
+          ver=${{ steps.get-tag.outputs.RELEASE_VERSION }}
           echo "IMG_TAG=${ver#"v"}" >> $GITHUB_ENV
 
       - name: Build image
         run: |
           OUTPUT_TYPE=type=registry make docker-build-kaito
         env:
-          VERSION: ${{ env.RELEASE_VERSION }}
+          VERSION: ${{ steps.get-tag.outputs.RELEASE_VERSION }}
 
       - name: Scan ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMG_TAG }}
         uses: aquasecurity/trivy-action@master
@@ -73,7 +73,7 @@ jobs:
       git_sha: ${{ github.sha }}
       isRelease: true
       registry: ${{ env.REGISTRY }}
-      tag: ${{ env.RELEASE_VERSION }}
+      tag: ${{ steps.get-tag.outputs.RELEASE_VERSION }}
     secrets:
       E2E_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       E2E_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
