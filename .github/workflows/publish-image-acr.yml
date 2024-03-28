@@ -129,13 +129,11 @@ jobs:
       id-token: write
       statuses: write
     needs: [ check-tag, build-scan-publish-image ]
-    env:
-      KAITO_MCR_REGISTRY: 'ghcr.io/helayoty/kaito'
     uses: ./.github/workflows/e2e-workflow.yml
     with:
       git_sha: ${{ github.sha }}
       isRelease: true
-      registry:  ${{ env.KAITO_MCR_REGISTRY }}/public/aks/kaito
+      registry:  ghcr.io/helayoty/kaito/public/aks/kaito
       tag: ${{ needs.check-tag.outputs.tag }}
     secrets:
       E2E_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
