@@ -75,12 +75,12 @@ jobs:
     needs: [ check-tag ]
     environment: preset-env
     outputs:
-      tag: ${{ steps.get-registry.outputs.REGISTRY }}
+      registry_repository: ${{ steps.get-registry.outputs.registry_repository }}
     steps:
       - id: get-registry
         run: |
           # registry must be in lowercase
-          echo " REGISTRY=$(echo "${{ env.REGISTRY }}/${{ github.repository }}" | tr [:upper:] [:lower:])" >> $GITHUB_ENV
+          echo " registry_repository=$(echo "${{ env.REGISTRY }}/${{ github.repository }}" | tr [:upper:] [:lower:])" >> $GITHUB_OUTPUT
 
       - id: get-tag
         name: Get tag
@@ -106,10 +106,10 @@ jobs:
         env:
           VERSION: ${{ needs.check-tag.outputs.tag }}
 
-      - name: Scan ${{ steps.get-registry.outputs.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMG_TAG }}
+      - name: Scan ${{ steps.get-registry.outputs.registry_repository }}/${{ env.IMAGE_NAME }}:${{ env.IMG_TAG }}
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ steps.get-registry.outputs.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMG_TAG }}
+          image-ref: ${{ steps.get-registry.outputs.registry_repository }}/${{ env.IMAGE_NAME }}:${{ env.IMG_TAG }}
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
@@ -126,7 +126,7 @@ jobs:
     with:
       git_sha: ${{ github.sha }}
       isRelease: true
-      registry: ${{ needs.get-registry.outputs.REGISTRY }}
+      registry: ${{ needs.get-registry.outputs.registry_repository }}
       tag:  ${{ needs.check-tag.outputs.tag }}
       
     secrets:
