@@ -24,8 +24,8 @@ jobs:
   check-tag:
     if: |
       github.event_name == 'workflow_dispatch' ||
-      contains(github.event.pull_request.title, 'update manifest and helm charts') &&
-      github.event.pull_request.merged == true
+      (contains(github.event.pull_request.title, 'update manifest and helm charts') &&
+      github.event.pull_request.merged == 'true')
     runs-on: ubuntu-latest
     environment: preset-env
     outputs:
